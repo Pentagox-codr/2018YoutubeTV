@@ -1013,6 +1013,35 @@ this.video.addEventListener("seeked", function () {
             throw makeError(String(data.error), 2);
         }
 
+                // Store available Invidious subtitle tracks.
+        self.captions = Array.isArray(data.captions)
+            ? data.captions.map(function (caption) {
+                var captionUrl = caption.url || "";
+
+                try {
+                    captionUrl = new URL(
+                        captionUrl,
+                        cfg.invidiousBaseUrl.replace(/\/+$/, "") + "/"
+                    ).href;
+                } catch (error) {
+                    captionUrl = "";
+                }
+
+                return {
+                    label: caption.label || caption.languageCode || "Unknown",
+                    languageCode: caption.languageCode || "en",
+                    url: captionUrl
+                };
+            }).filter(function (caption) {
+                return !!caption.url;
+            })
+            : [];
+
+        self.captionTrackElements = [];
+        self.activeCaptionTrack = -1;
+
+        log("available captions:", self.captions);
+
         self.videoData = {
             videoId: data.videoId || videoId,
             video_id: data.videoId || videoId,
@@ -1107,6 +1136,56 @@ this.video.addEventListener("seeked", function () {
             }
         });
     });
+};
+
+Player.prototype.getCaptionTracks = function () {
+    return (this.captionTrackElements || []).map(function (item) {
+        return {
+            index: item.index,
+            label: item.label,
+            languageCode: item.languageCode
+        };
+    });
+};
+
+Player.prototype.setCaptionTrack = function (index) {
+    var tracks = this.captionTrackElements || [];
+
+    index = Number(index);
+
+    if (!Number.isInteger(index) || index < 0) {
+        this.disableCaptions();
+        return;
+    }
+
+    var selected = tracks.find(function (item) {
+        return item.index === index;
+    });
+
+    if (!selected) return;
+
+    tracks.forEach(function (item) {
+        item.element.track.mode =
+            item === selected ? "showing" : "disabled";
+    });
+
+    this.activeCaptionTrack = index;
+
+    this.emit("onApiChange");
+
+    log("caption selected:", selected.label);
+};
+
+Player.prototype.disableCaptions = function () {
+    (this.captionTrackElements || []).forEach(function (item) {
+        item.element.track.mode = "disabled";
+    });
+
+    this.activeCaptionTrack = -1;
+
+    this.emit("onApiChange");
+
+    log("captions disabled");
 };
 
   Player.prototype.attachHls = function (url) {
@@ -1347,6 +1426,18 @@ Player.prototype.seekTo = function (seconds) {
             return self.id;
         },
 
+                getCaptionTracks: function () {
+            return self.getCaptionTracks();
+        },
+
+        setCaptionTrack: function (index) {
+            return self.setCaptionTrack(index);
+        },
+
+        disableCaptions: function () {
+            return self.disableCaptions();
+        },
+
         getPlayerType: function () {
             return 1;
         },
@@ -1358,6 +1449,18 @@ Player.prototype.seekTo = function (seconds) {
         isReady: function () {
             return !!self.ready && !self.destroyed;
         },
+
+        getSubtitlesUserSettings: function () {
+    return self.getSubtitlesUserSettings();
+},
+
+updateSubtitlesUserSettings: function (settings) {
+    return self.updateSubtitlesUserSettings(settings);
+},
+
+resetSubtitlesUserSettings: function () {
+    return self.resetSubtitlesUserSettings();
+},
 
         getLastError: function () {
             return self.lastError;
@@ -1387,19 +1490,16 @@ Player.prototype.seekTo = function (seconds) {
             return self.destroy();
         },
 
-        // Storyboard format.
         getStoryboardFormat: function () {
             return self.storyboardFormat || null;
         },
 
-        // Number of available storyboard levels.
         getNumberOfStoryboardLevels: function () {
             return Array.isArray(self.storyboardLevels)
                 ? self.storyboardLevels.length
                 : 0;
         },
 
-        // Returns information about a storyboard level.
         getStoryboardLevel: function (levelIndex) {
             var levels = self.storyboardLevels;
 
@@ -1428,7 +1528,6 @@ Player.prototype.seekTo = function (seconds) {
             });
         },
 
-        // Finds the storyboard frame corresponding to playback time.
         getStoryboardFrameIndex: function (seconds, levelIndex) {
             var levels = self.storyboardLevels;
             var cues = self.storyboardCues;
@@ -1456,7 +1555,6 @@ Player.prototype.seekTo = function (seconds) {
                 return -1;
             }
 
-            // Find the cue containing this timestamp.
             for (var i = 0; i < cues.length; i++) {
                 var cue = cues[i];
 
@@ -1467,17 +1565,14 @@ Player.prototype.seekTo = function (seconds) {
                     return i;
                 }
 
-                // If there is a gap, use the preceding frame.
                 if (seconds < cue.start) {
                     return Math.max(0, i - 1);
                 }
             }
 
-            // Allow the final frame to remain selected at the end.
             return cues.length - 1;
         },
 
-        // Returns the sprite-sheet crop information for a frame.
         getStoryboardFrame: function (frameIndex, levelIndex) {
             var levels = self.storyboardLevels;
             var cues = self.storyboardCues;
@@ -1510,13 +1605,10 @@ Player.prototype.seekTo = function (seconds) {
 
             return {
                 url: cue.url,
-
                 columns: Math.max(1, Number(cue.columns) || 1),
                 rows: Math.max(1, Number(cue.rows) || 1),
-
                 column: Math.max(0, Number(cue.column) || 0),
                 row: Math.max(0, Number(cue.row) || 0),
-
                 width: Number(cue.width) || 158,
                 height: Number(cue.height) || 90
             };
@@ -1645,8 +1737,23 @@ Player.prototype.seekTo = function (seconds) {
         },
 
         getPlaybackQuality: function () {
-            return self.getPlaybackQuality();
-        },
+    var quality = self.getPlaybackQuality();
+
+    var map = {
+        "144p": "small",
+        "240p": "small",
+        "360p": "medium",
+        "480p": "large",
+        "720p": "hd720",
+        "1080p": "hd1080",
+        "1440p": "hd1440",
+        "2160p": "hd2160",
+        "2880p": "hd2880",
+        "4320p": "highres"
+    };
+
+    return map[quality] || quality;
+},
 
         setPlaybackQuality: function (quality) {
             return api.setPlaybackQualityRange(quality, quality);
@@ -1968,10 +2075,6 @@ Player.prototype.seekTo = function (seconds) {
             self.playlistIndex = -1;
         },
 
-        getCurrentTime: function () {
-            return Number(self.video.currentTime) || 0;
-        },
-
         getAvailableAudioTracks: function () {
             return [];
         },
@@ -1997,25 +2100,21 @@ Player.prototype.seekTo = function (seconds) {
 
         getPlayerResponse: function () {
             return self.playerResponse || null;
-        },
-
-        getDuration: function () {
-            return isFinite(self.video.duration)
-                ? self.video.duration
-                : 0;
-        },
-
-        getProgressState: function () {
-            return self.getProgressState();
         }
     };
 
+    var playerApi = api;
+
     if (typeof Proxy === "function") {
-        return new Proxy(api, {
+        playerApi = new Proxy(api, {
             get: function (target, key) {
+                function returnkey() { 
+                    log("player API Called:", key);
+                    return target[key];
+                }
                 if (key === "then") return undefined;
-                if (key in target) return target[key];
-                if (typeof key === "symbol") return target[key];
+                if (key in target) return returnkey();
+                if (typeof key === "symbol") return returnkey();
 
                 return function () {
                     log("unimplemented player API call:", key);
@@ -2024,7 +2123,75 @@ Player.prototype.seekTo = function (seconds) {
         });
     }
 
-    return api;
+    // Expose the API methods on the movie_player element.
+    Object.keys(api).forEach(function (key) {
+        try {
+            Object.defineProperty(self.root, key, {
+                configurable: true,
+                writable: true,
+                value: playerApi[key]
+            });
+        } catch (error) {
+            log("could not expose player API method:", key, error);
+        }
+    });
+
+    return playerApi;
+};
+
+Player.prototype.getSubtitlesUserSettings = function () {
+    if (!this.subtitlesUserSettings) {
+        this.subtitlesUserSettings = {
+            background: "#000000",
+            backgroundOpacity: 0.75,
+            backgroundOverride: false,
+
+            charEdgeStyle: 0,
+            charEdgeStyleOverride: false,
+
+            color: "#FFFFFF",
+            colorOverride: false,
+
+            fontFamily: 0,
+            fontFamilyOverride: false,
+
+            fontSizeIncrement: 0,
+            fontSizeIncrementOverride: false,
+
+            fontStyle: 0,
+            fontStyleOverride: false,
+
+            textOpacity: 1,
+            textOpacityOverride: false,
+
+            windowColor: "#000000",
+            windowColorOverride: false,
+
+            windowOpacity: 0,
+            windowOpacityOverride: false
+        };
+    }
+
+    return Object.assign({}, this.subtitlesUserSettings);
+};
+
+Player.prototype.updateSubtitlesUserSettings = function (settings) {
+    if (!settings || typeof settings !== "object") return;
+
+    if (!this.subtitlesUserSettings) {
+        this.getSubtitlesUserSettings();
+    }
+
+    Object.assign(this.subtitlesUserSettings, settings);
+
+    this.emit("onApiChange");
+};
+
+Player.prototype.resetSubtitlesUserSettings = function () {
+    this.subtitlesUserSettings = null;
+    this.getSubtitlesUserSettings();
+
+    this.emit("onApiChange");
 };
 
   Player.prototype.getPlaybackQuality = function () {
@@ -2053,29 +2220,32 @@ Player.prototype.seekTo = function (seconds) {
     };
   };
 
-  Player.prototype.getQualityLevels = function () {
-    var seen = Object.create(null);
-
-    return this.formats.map(function (format) {
-      return format.qualityLabel ||
-        format.quality ||
-        (qualityNumber(format) ? qualityNumber(format) + "p" : "auto");
-    }).filter(function (value) {
-      if (seen[value]) return false;
-
-      seen[value] = true;
-      return true;
-    });
-  };
-
   Player.prototype.setQuality = function (minimum, maximum) {
     if (!this.videoId) return;
 
     var cfg = settings();
 
+    var qualityMap = {
+        small: "240p",
+        medium: "360p",
+        large: "480p",
+        hd720: "720p",
+        hd1080: "1080p",
+        hd1440: "1440p",
+        hd2160: "2160p",
+        hd2880: "2880p",
+        highres: "4320p"
+    };
+
+    var requested = maximum || minimum || "auto";
+
+    if (qualityMap[requested]) {
+        requested = qualityMap[requested];
+    }
+
     var quality = normalizeRawQuality(
-      maximum || minimum || "auto",
-      cfg.rawQuality
+        requested,
+        cfg.rawQuality
     );
 
     if (quality === this.selectedQuality) return;
@@ -2088,19 +2258,60 @@ Player.prototype.seekTo = function (seconds) {
     var self = this;
 
     this.video.addEventListener("loadedmetadata", function restore() {
-      self.video.removeEventListener("loadedmetadata", restore);
+        self.video.removeEventListener("loadedmetadata", restore);
 
-      try {
-        self.video.currentTime = time;
-      } catch (_) {}
+        try {
+            self.video.currentTime = time;
+        } catch (_) {}
 
-      if (wasPlaying) {
-        self.playVideo();
-      }
+        if (wasPlaying) {
+            self.playVideo();
+        }
     });
 
     this.emit("onPlaybackQualityChange", this.getPlaybackQuality());
-  };
+};
+
+Player.prototype.getQualityLevels = function () {
+    var seen = Object.create(null);
+
+    var qualityMap = {
+        144: "small",
+        240: "small",
+        360: "medium",
+        480: "large",
+        720: "hd720",
+        1080: "hd1080",
+        1440: "hd1440",
+        2160: "hd2160",
+        2880: "hd2880",
+        4320: "highres"
+    };
+
+    var levels = this.formats.map(function (format) {
+        var label = format.qualityLabel || "";
+        var number = parseInt(label, 10);
+
+        if (!number) {
+            number = qualityNumber(format);
+        }
+
+        var id = qualityMap[number];
+
+        if (!id && typeof format.quality === "string") {
+            id = format.quality;
+        }
+
+        return id || null;
+    }).filter(function (value) {
+        if (!value || seen[value]) return false;
+
+        seen[value] = true;
+        return true;
+    });
+
+    return levels;
+};
 
   Player.prototype.nextVideo = function () {
     if (!this.playlist.length) return;
@@ -2186,8 +2397,55 @@ Player.prototype.seekTo = function (seconds) {
   };
 
   Player.prototype.loadCaptions = function () {
-    this.emit("onApiChange");
-  };
+    var self = this;
+    var video = self.video;
+
+    if (!video) return;
+
+    // Remove previously created caption tracks.
+    Array.from(video.querySelectorAll("track[data-tv-caption]")).forEach(
+        function (track) {
+            track.track.mode = "disabled";
+            track.remove();
+        }
+    );
+
+    self.captionTrackElements = [];
+    self.activeCaptionTrack = -1;
+
+    var captions = Array.isArray(self.captions)
+        ? self.captions
+        : [];
+
+    captions.forEach(function (caption, index) {
+        if (!caption || !caption.url) return;
+
+        var track = document.createElement("track");
+
+        track.kind = "subtitles";
+        track.label = caption.label || caption.languageCode || "Unknown";
+        track.srclang = caption.languageCode || "en";
+        track.src = caption.url;
+        track.dataset.tvCaption = "true";
+
+        track.track.mode = "disabled";
+
+        video.appendChild(track);
+
+        self.captionTrackElements.push({
+            element: track,
+            index: index,
+            label: track.label,
+            languageCode: track.srclang
+        });
+    });
+
+    self.emit("onApiChange");
+
+    log("captions loaded:", self.captionTrackElements.length);
+
+    return self.captionTrackElements;
+};
 
   Player.prototype.destroy = function () {
     if (this.destroyed) return;

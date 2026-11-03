@@ -1,12 +1,12 @@
 
-# 2016YouTubeTV
+# 2018YouTubeTV
 
 A project to revive the old 2018 YouTubeTV HTML5 Web App.
 MODIFIED 2016YoutubeTV by OYTLover
 
 ## Screenshots
 
-**[Note These Are As Of The 8th Of February At 1:32 EST, Things Will Have Changed]**
+**[Note These Are As Of The 3rd Of November At 7:27PM EST, Things Will Have Changed]**
 
 ![Screenshot 1](screenshots/s1.png)
 ![Screenshot 2](screenshots/s2.png)
@@ -125,15 +125,7 @@ are all going to be filtered through port 8070!
 
 ## Supported YouTube TV Clients
 
-We only offically supprort clients which use InnerTube version 5.20150715 as of right now.
-
-Be aware though it does require some patching of the app-prod.js to get it working properly,
-this is due to me having to base off of a InnerTube v6 response as no V5 exsit. 
-
-This **MAY** (and I emphasise MAY) work on "6.20180807" clients without modifying models and some other parts of the app-prod.js.
-
-[Look at and search from a.register("tiles/video_tile.html"), model.durationLabelCustom, and
-customVideoTileKg if you want an understanding of what I had to do to get it to work."]
+We only support 6.20180807 as of now.
 
 ## Clients I May Choose To Support In The Future ##
 
@@ -161,21 +153,19 @@ innertube for search and stuff, but not fully GDATA ones. Just use YT2009 at tha
     Status: Done
     Next None;
 
-3. Browse/Channels - 85% Done
+3. Browse/Channels - 95% Done
 
     Status: Working on finishing up the browse API, the homepage is close to being done but other parts may need work.
     Next Steps: Fully finish the implemtion.
 
-4a. Watch - 90% Done
+4a. Watch - 95% Done
 
-    Status: Videos play, a tiny bit buggy somtimes **you need to play and pause and play again** for progress to work, but works.
-    Next Steps: Make it less bugger and chunk less data.
+    Status: Videos play, but doing interations dosent work.
+    Next Steps: Nothing.
 
-    ** Right now SOME videos don't work, this is just because I haven't done the WebM to H264 fallback yet, it will be fixed **
+4b. Watch Interactions - 0% Done
 
-4b. Watch Interactions - 100% Done
-
-    Status: You can sub, unsub, like, and they'll all load.
+    Status: sign in is not there.
     Next Steps: Nothing.
 
 5. Pairing - 30% Done
@@ -183,10 +173,10 @@ innertube for search and stuff, but not fully GDATA ones. Just use YT2009 at tha
     Status: Got some end points implemented, but they don't create the code.
     Next Steps: Get it to create the pairing code.
 
-6. Sign In - 75% Done
+6. Sign In - 0% Done
 
-    Status: Implemented /o/oauth2/code and it properly grabs the oauth code or whatever it is calle, and Implemented /o/oauth2/token!!
-    Next Steps: Make it so the token can request the token more than 5 times (rn you have to be fast).
+    Status: sign in is not there.
+    Next Steps: Nothing.
 
 7. Assets - 95% Done
 

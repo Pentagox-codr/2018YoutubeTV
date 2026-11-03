@@ -1,574 +1,1600 @@
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
+const fs = require("fs");
+const path = require("path");
+const axios = require("axios");
 
-const settingsPath = path.join(__dirname, 'settings.json');
+const settingsPath = path.join(__dirname, "settings.json");
+
+const feedConfig = [
+    { title: "Recommended", type: "home", default: true },
+    { title: "Music", type: "FEmusic", default: false },
+    { title: "Entertainment", type: "FEcomedy", default: false },
+    { title: "Gaming", type: "FEgaming", default: false },
+    { title: "Movies", type: "FEmovies", default: false }
+];
+
+const browseConfig = [
+    {
+        topic: "home",
+        shelves: [
+            { title: "Trending", search: "trending videos" },
+            { title: "Michael Jackson - Topic", search: "michael jackson videos" },
+            { title: "Minecraft - Topic", search: "minecraft videos" }
+        ]
+    },
+    {
+        topic: "FEmusic",
+        shelves: [
+            { title: "Trending", search: "trending music videos" },
+            { title: "Top 20 music videos in your region", search: "top music videos in malaysia", limit: 20 },
+            { title: "New releases", search: "new official music videos" },
+            { title: "Popular music videos", search: "most viewed music videos" },
+            { title: "Pop music", search: "popular pop music videos" },
+            { title: "Rock music", search: "popular rock music videos" },
+            { title: "Hip Hop", search: "popular hip hop music videos" },
+            { title: "Electronic Music", search: "popular electronic music videos" },
+            { title: "Music Mixes", search: "music mixes" },
+            { title: "Live Music", search: "live music performances" }
+        ]
+    },
+    {
+        topic: "FEmovies",
+        shelves: [
+            { title: "Trending", search: "trending movie videos" },
+            { title: "Cool movies for you", search: "popular movies in malaysia" },
+            { title: "New releases", search: "new movie trailers" },
+            { title: "Popular Movie Trailers", search: "popular movie trailers" },
+            { title: "Action Movies", search: "action movie trailers" },
+            { title: "Comedy Movies", search: "comedy movie trailers" },
+            { title: "Animation Movies", search: "animated movie trailers" },
+            { title: "Documentaries", search: "popular documentary films" }
+        ]
+    },
+    {
+        topic: "FEgaming",
+        shelves: [
+            { title: "Trending", search: "trending gaming videos" },
+            { title: "Fortnite", search: "fortnite gaming videos" },
+            { title: "ROBLOX", search: "roblox gaming videos" },
+            { title: "PUBG", search: "pubg gaming videos" },
+            { title: "Minecraft", search: "minecraft gaming videos" },
+            { title: "Grand Theft Auto", search: "gta gaming videos" },
+            { title: "Mobile Gaming", search: "mobile gaming videos" },
+            { title: "Gameplay Walkthroughs", search: "gaming walkthroughs" },
+            { title: "Gaming News", search: "gaming news" },
+            { title: "Funny Gaming Moments", search: "funny gaming moments" },
+            { title: "Live Gaming", search: "gaming livestreams" }
+        ]
+    },
+    {
+        topic: "FEkids",
+        shelves: [
+            { title: "Popular Children's Videos", search: "popular childrens videos" },
+            { title: "Children's Songs", search: "childrens songs" },
+            { title: "Nursery Rhymes", search: "nursery rhymes" },
+            { title: "Cartoons", search: "cartoon episodes for kids" },
+            { title: "Educational Videos for Kids", search: "educational videos for children" },
+            { title: "Animated Stories", search: "animated stories for kids" }
+        ]
+    },
+    {
+        topic: "FEsports",
+        shelves: [
+            { title: "Trending", search: "trending sports videos" },
+            { title: "Football", search: "football highlights" },
+            { title: "Basketball", search: "basketball highlights" },
+            { title: "Motorsports", search: "motorsports highlights" },
+            { title: "Wrestling", search: "wrestling highlights" },
+            { title: "Extreme Sports", search: "extreme sports videos" },
+            { title: "Sports News", search: "sports news" }
+        ]
+    },
+    {
+        topic: "FEnews",
+        shelves: [
+            { title: "Top", search: "latest news" },
+            { title: "Malaysia News", search: "malaysia news" },
+            { title: "World News", search: "world news" },
+            { title: "Technology News", search: "technology news" },
+            { title: "Business News", search: "business news" },
+            { title: "News Analysis", search: "news analysis" }
+        ]
+    },
+    {
+        topic: "FEcomedy",
+        shelves: [
+            { title: "Trending", search: "trending comedy videos" },
+            { title: "Funny Videos", search: "funny videos" },
+            { title: "Stand-up Comedy", search: "stand up comedy" },
+            { title: "Comedy Sketches", search: "comedy sketches" },
+            { title: "Pranks", search: "funny prank videos" },
+            { title: "Memes", search: "funny meme videos" }
+        ]
+    },
+    {
+        topic: "FEtechnology",
+        shelves: [
+            { title: "Trending", search: "trending technology videos" },
+            { title: "Tech Reviews", search: "latest tech reviews" },
+            { title: "Smartphones", search: "smartphone reviews" },
+            { title: "Computers", search: "PC hardware videos" },
+            { title: "Software", search: "software tutorials" },
+            { title: "Tech News", search: "technology news" }
+        ]
+    },
+    {
+        topic: "FEeducation",
+        shelves: [
+            { title: "Popular Educational Videos", search: "popular educational videos" },
+            { title: "Science", search: "science educational videos" },
+            { title: "History", search: "history documentaries" },
+            { title: "Mathematics", search: "mathematics lessons" },
+            { title: "Programming", search: "programming tutorials" },
+            { title: "Learning Languages", search: "language learning videos" }
+        ]
+    },
+    {
+        topic: "FEfood",
+        shelves: [
+            { title: "Trending", search: "trending food videos" },
+            { title: "Cooking", search: "cooking tutorials" },
+            { title: "Street Food", search: "malaysia street food" },
+            { title: "Food Reviews", search: "food reviews" },
+            { title: "Recipes", search: "popular recipes" }
+        ]
+    },
+    {
+        topic: "FEtravel",
+        shelves: [
+            { title: "Trending", search: "trending travel videos" },
+            { title: "Malaysia", search: "malaysia travel" },
+            { title: "Around the World", search: "travel around the world" },
+            { title: "Travel Vlogs", search: "travel vlogs" },
+            { title: "Beautiful Places", search: "beautiful places in the world" }
+        ]
+    }
+];
+
+const baseURL = "https://eu.yt.chocolatemoo53.com/api/v1";
+const REGION = "MY";
+
+const SHELVES_PER_BATCH = 6;
+const DEFAULT_PAGE_SIZE = 20;
+
+const CLICK_TRACKING = "CFkQ3BwYACITCPLIwIe15-QCFQfPxAodo08HkA==";
+const SHELF_TRACKING = "CFoQxjkiEwjyyMCHtefkAhUHz8QKHaNPB5A=";
+const SECTION_TRACKING = "CBUQui8iEwjyyMCHtefkAhUHz8QKHaNPB5A=";
+const SURFACE_TRACKING = "CBAQ0IwDIhMI8sjAh7Xn5AIVB8_ECh2jTweQ";
 
 let settings;
 
 if (!fs.existsSync(settingsPath)) {
-    const defaultSettings = { 
-        serverIp: 'localhost',  
-        expBrowse: false        
+    settings = {
+        serverIp: "localhost",
+        expBrowse: false,
+        region: REGION
     };
-    fs.writeFileSync(settingsPath, JSON.stringify(defaultSettings, null, 4));
-    console.log("Created settings.json with default serverIp = localhost and expBrowse = false.");
-    settings = defaultSettings;
+
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 4));
+    console.log("Created settings.json with default settings.");
 } else {
-    settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    try {
+        settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    } catch (error) {
+        console.error("Could not parse settings.json:", error.message);
+
+        settings = {
+            serverIp: "localhost",
+            expBrowse: false,
+            region: REGION
+        };
+    }
 }
 
 const serverIp = settings.serverIp || "localhost";
+const region = settings.region || REGION;
 
-async function fetchBrowseData(browseId, authHeader = null) { 
-    const apiKey = 'AIzaSyDCU8hByM-4DrUqRUYnGn-3llEO78bcxq8';
-    const apiUrl = `https://www.googleapis.com/youtubei/v1/browse?key=${apiKey}`;
 
-    if (browseId == "home") {
-        browseId = "FEtopics";
+// --------------------------------------------------
+// BROWSE HELPERS
+// --------------------------------------------------
+
+function normalizeBrowseId(browseId) {
+    if (
+        browseId === null ||
+        browseId === undefined ||
+        browseId === "" ||
+        browseId === "default" ||
+        browseId === "FEwhat_to_watch"
+    ) {
+        return "home";
     }
 
-    const postData = {
-        context: {
-            client: {
-                clientName: 'TVHTML5',
-                clientVersion: '7.20250205.16.00',
-                hl: 'en',
-                gl: 'US',
-            }
-        },
-        browseId: browseId
-    };
-
-    const headers = {
-        'Content-Type': 'application/json'
-    };
-
-    if (authHeader) {
-        headers['Authorization'] = `Bearer ${authHeader}`;
+    if (browseId === "FEmusic_home") {
+        return "FEmusic";
     }
 
-    try {
-        console.log('Sending request to YouTube Browse API with payload:', postData);
-
-        const response = await axios.post(apiUrl, postData, { headers });
-
-        console.log('Received response from YouTube Browse API:', response.data);
-
-        if (response.status !== 200) {
-            console.error('Error: Received non-200 status from YouTube API:', response.status);
-            return { error: `YouTube API returned status code ${response.status}` };
-        }
-
-        let updatedData 
-
-        if(browseId == "FEsubscriptions") {
-            updatedData = convertSubscriptionsToV5(response.data, authHeader);
-        } else {
-            updatedData = convertToV5(response.data, browseId);
-        }
-
-        const logsDir = path.join(__dirname, 'logs');
-        if (!fs.existsSync(logsDir)) {
-            fs.mkdirSync(logsDir); 
-        }
-
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const logFilePath = path.join(logsDir, `modded-browse-response-${timestamp}.json`);
-        const logFilePath2 = path.join(logsDir, `raw-browse-response-${timestamp}.json`);
-
-        fs.writeFileSync(logFilePath, JSON.stringify(updatedData, null, 2)); 
-        fs.writeFileSync(logFilePath2, JSON.stringify(response.data, null, 2)); 
-
-        console.log('Updated response saved to log file:', logFilePath);
-
-        return updatedData;
-    } catch (error) {
-        console.error('Error fetching browse data:', error.message);
-
-        if (error.response) {
-            console.error('Error Response:', error.response.data);
-            return { error: `Error from YouTube API: ${error.response.data}` };
-        } else if (error.request) {
-            console.error('No response received:', error.request);
-            return { error: 'No response received from YouTube API.' };
-        } else {
-            console.error('General error:', error.message);
-            return { error: `Failed to fetch data from YouTube Browse API: ${error.message}` };
-        }
-    }
+    return browseId;
 }
 
-async function fetchBrowseContinuationsForSubs(continuationCode, authHeader = null) {
-    const apiKey = 'AIzaSyDCU8hByM-4DrUqRUYnGn-3llEO78bcxq8';
-    const apiUrl = `https://www.googleapis.com/youtubei/v1/browse?key=${apiKey}`;
+function getBrowseConfig(browseId) {
+    const normalized = normalizeBrowseId(browseId);
 
-    const postData = {
-        context: {
-            client: {
-                clientName: 'TVHTML5',
-                clientVersion: '7.20250205.16.00',
-                hl: 'en',
-                gl: 'US',
-            }
-        },
-        continuation: continuationCode
-    };
+    return browseConfig.find(
+        item => item.topic === normalized
+    ) || null;
+}
 
-    const headers = {
-        'Content-Type': 'application/json'
-    };
+function isChannelId(id) {
+    return /^UC[a-zA-Z0-9_-]{22}$/.test(String(id || ""));
+}
 
-    if (authHeader) {
-        headers['Authorization'] = `Bearer ${authHeader}`;
-    }
+function getFeedTitle(browseId) {
+    const normalized = normalizeBrowseId(browseId);
 
-    try {
-        console.log('Sending continuation request to YouTube Browse API with payload:', postData);
+    const tab = feedConfig.find(
+        item => item.type === normalized
+    );
 
-        const response = await axios.post(apiUrl, postData, { headers });
+    return tab ? tab.title : normalized;
+}
 
-        console.log('Received response from YouTube Browse API:', response.data);
-
-        if (response.status !== 200) {
-            console.error('Error: Received non-200 status from YouTube API:', response.status);
-            return { error: `YouTube API returned status code ${response.status}` };
-        }
-
-        let updatedData;
-
-        // Update the data for subscriptions
-        updatedData = response.data;
-
-        // Save logs for the continuation data
-        const logsDir = path.join(__dirname, 'logs');
-        if (!fs.existsSync(logsDir)) {
-            fs.mkdirSync(logsDir);
-        }
-
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const logFilePath = path.join(logsDir, `modded-continuation-response-${timestamp}.json`);
-        const logFilePath2 = path.join(logsDir, `raw-continuation-response-${timestamp}.json`);
-
-        fs.writeFileSync(logFilePath, JSON.stringify(updatedData, null, 2));
-        fs.writeFileSync(logFilePath2, JSON.stringify(response.data, null, 2));
-
-        console.log('Updated continuation response saved to log file:', logFilePath);
-
-        return updatedData;
-    } catch (error) {
-        console.error('Error fetching continuation data:', error.message);
-
-        if (error.response) {
-            console.error('Error Response:', error.response.data);
-            return { error: `Error from YouTube API: ${error.response.data}` };
-        } else if (error.request) {
-            console.error('No response received:', error.request);
-            return { error: 'No response received from YouTube API.' };
-        } else {
-            console.error('General error:', error.message);
-            return { error: `Failed to fetch continuation data from YouTube Browse API: ${error.message}` };
-        }
-    }
+function getSurfaceTrackingParams() {
+    return SURFACE_TRACKING;
 }
 
 
+// --------------------------------------------------
+// RESPONSE CONTEXT
+// --------------------------------------------------
 
-function convertToV5(data, browseId) {
-    console.log('Received Data:', data);
-
-    const sectionListRendererContents = data?.contents?.tvBrowseRenderer?.content?.tvSurfaceContentRenderer?.content?.sectionListRenderer?.contents;
-
-    console.log('sectionListRenderer.contents:', sectionListRendererContents);
-
-    
-    // the first result on this causes issues
-
-    if (browseId === "home" || browseId === "FEtopics" || browseId === "FElibrary") {
-        if (Array.isArray(sectionListRendererContents) && sectionListRendererContents.length > 0) {
-            console.log('Removing the first shelfRenderer due to issues...');
-            sectionListRendererContents.shift(); 
-        }
-    }
-
-    if (Array.isArray(sectionListRendererContents)) {
-        sectionListRendererContents.forEach((item, index) => {
-            console.log(`Processing Item ${index}:`, item);
-
-            try {
-                if (item && item.shelfRenderer) {
-
-                    const headerText = item.shelfRenderer.headerRenderer?.shelfHeaderRenderer?.avatarLockup?.avatarLockupRenderer?.title?.runs?.[0]?.text || "Trending";
-
-                    item.shelfRenderer.title = item.shelfRenderer.title || {
-                        runs: [
-                            {
-                                text: headerText 
-                            }
-                        ]
-                    };
-
-                    const horizontalList = item.shelfRenderer.content?.horizontalListRenderer?.items;
-
-                    if (Array.isArray(horizontalList)) {
-                        horizontalList.forEach((videoItem, videoIndex) => {
-                            if (videoItem.tileRenderer) {
-
-                                const videoId = videoItem.tileRenderer.onSelectCommand?.watchEndpoint?.videoId || "";
-                               
-                                const thumbnail = {
-                                    thumbnails: [
-                                        { url: `https://i.ytimg.com/vi/${videoId}/default.jpg`, width: 120, height: 90 },
-                                        { url: `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`, width: 320, height: 180 },
-                                        { url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg?sqp=-oaymwEXCLwDEPoBSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLAkg3xb3N0myg-Owh_bJrW1rAXJTg`, width: 444, height: 250 },
-                                        { url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`, width: 480, height: 360 },
-                                        { url: `https://i.ytimg.com/vi/${videoId}/sddefault.jpg`, width: 640, height: 480 },
-                                        { url: `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`, width: 1920, height: 1080 }
-                                    ]
-                                };
-
-                                const metadata = videoItem.tileRenderer.metadata?.tileMetadataRenderer || {};
-
-                                const titleText = metadata.title?.simpleText || "Untitled Video";
-                              
-                                const viewCountText = (
-                                    metadata.lines?.[1]?.lineRenderer?.items?.find(item => item.lineItemRenderer?.text?.simpleText?.includes('views'))?.lineItemRenderer?.text?.simpleText ||
-                                    metadata.lines?.[1]?.lineRenderer?.items?.find(item => item.lineItemRenderer?.text?.accessibility?.accessibilityData?.label?.includes('views'))?.lineItemRenderer?.text?.accessibility?.accessibilityData?.label ||
-                                    "0 views"
-                                );
-                                
-                               
-                                const publishedTimeText = (
-                                    metadata.lines?.[1]?.lineRenderer?.items?.find(item => item.lineItemRenderer?.text?.simpleText?.includes('ago'))?.lineItemRenderer?.text?.simpleText ||
-                                    metadata.lines?.[1]?.lineRenderer?.items?.find(item => item.lineItemRenderer?.text?.accessibility?.accessibilityData?.label?.includes('ago'))?.lineItemRenderer?.text?.accessibility?.accessibilityData?.label ||
-                                    "Unknown"
-                                );
-                                
-                                const lengthText = (
-                                    videoItem.tileRenderer.header?.tileHeaderRenderer?.thumbnailOverlays?.[0]?.thumbnailOverlayTimeStatusRenderer?.text?.simpleText ||
-                                    metadata.lines?.[1]?.lineRenderer?.items?.find(item => item.lineItemRenderer?.text?.simpleText?.includes('min'))?.lineItemRenderer?.text?.simpleText ||
-                                    "0:00"
-                                );
-                                
-                                let channelName = "Unknown Channel";
-                                if (metadata.lines && metadata.lines[0] && metadata.lines[0].lineRenderer && metadata.lines[0].lineRenderer.items) {
-                                    const channelInfo = metadata.lines[0].lineRenderer.items.find(item => item.lineItemRenderer?.text?.runs);
-                                    
-                                    if (channelInfo && channelInfo.lineItemRenderer.text.runs[0]?.text) {
-                                        channelName = channelInfo.lineItemRenderer.text.runs[0].text; // Extracting the channel name
-                                    }
-                                }
-
-                                const navigationEndpoint = {
-                                    clickTrackingParams: "CCsQlDUYACITCMGSzriaguECFddATAgdB1AO4jILZy10b3BpYy10cnZaD0ZFd2hhdF90b193YXRjaA==",
-                                    watchEndpoint: {
-                                        videoId: videoId,
-                                        params: "6gILT3hvT1NvaG1hYWfqAgt1a3BxYlNYdFZMVeoCC1RjTUJGU0dWaTFj6gILb3IyR1FmZmpuYWvqAgtDLW8wUmdpWFFmQeoCC1VtaFhoVG1QMGEw6gILZm95dWZENTJhb2fqAgtDa3pqRzRoNko0UeoCCzk3dDdYal9pQnYw6gILeHF1bXBYazNCYk3qAgtvSjJINURPVmxKZ-oCC3lhYndacEFmOFFz6gILbVBYRGwtSFJqbGvqAgs5Qk5WRzZNZHFaMPoCCFRyZW5kaW5n"
-                                    }
-                                };
-
-                                const shortBylineText = {
-                                    runs: [
-                                        {
-                                            text: channelName, 
-                                            navigationEndpoint: {
-                                                clickTrackingParams: "CCsQlDUYACITCMGSzriaguECFddATAgdB1AO4g==",
-                                                browseEndpoint: {
-                                                    browseId: "UCUK0HBIBWgM2c4vsPhkYY4w", 
-                                                    canonicalBaseUrl: "/user/theslowmoguys"
-                                                }
-                                            }
-                                        }
-                                    ]
-                                };
-
-                                videoItem.gridVideoRenderer = {
-                                    videoId: videoId,
-                                    thumbnail: thumbnail,
-                                    title: { runs: [{ text: titleText }] },
-                                    viewCountText: { runs: [{ text: viewCountText }] },
-                                    publishedTimeText: { runs: [{ text: publishedTimeText }] },
-                                    lengthText: {
-                                        runs: [{ text: lengthText }],
-                                        accessibility: { accessibilityData: { label: lengthText } }
-                                    },
-                                    navigationEndpoint: navigationEndpoint,
-                                    shortBylineText: shortBylineText
-                                };
-
-                                delete videoItem.gridVideoRenderer.tvhtml5Style;
-
-                                delete videoItem.tileRenderer; 
-
-                                console.log(`Converted tileRenderer to gridVideoRenderer in Item ${index}, Video ${videoIndex}, VideoId: ${videoId}`);
-                            } else {
-                                videoItem.gridVideoRenderer = {};
-                            }
-                        });
+function makeResponseContext() {
+    return {
+        serviceTrackingParams: [
+            {
+                service: "GFEEDBACK",
+                params: [
+                    {
+                        key: "logged_in",
+                        value: "0"
                     }
+                ]
+            }
+        ],
+        maxAgeSeconds: 300
+    };
+}
 
-                    console.log(`Processed shelfRenderer for Item ${index}: ${headerText}`);
-                } else {
-                    console.warn(`Item ${index} is undefined or malformed.`);
-                }
-            } catch (err) {
-                console.error(`Error processing item ${index}:`, err);
+
+// --------------------------------------------------
+// CUSTOM CONTINUATION TOKENS
+// --------------------------------------------------
+
+function makeContinuation(payload) {
+    return Buffer.from(
+        JSON.stringify({
+            v: 1,
+            ...payload
+        }),
+        "utf8"
+    ).toString("base64url");
+}
+
+function parseContinuation(token) {
+    if (typeof token !== "string" || !token.trim()) {
+        return null;
+    }
+
+    try {
+        const normalized = decodeURIComponent(token);
+
+        const payload = JSON.parse(
+            Buffer.from(normalized, "base64url").toString("utf8")
+        );
+
+        if (
+            !payload ||
+            payload.v !== 1 ||
+            typeof payload.kind !== "string"
+        ) {
+            return null;
+        }
+
+        return payload;
+    } catch (error) {
+        return null;
+    }
+}
+
+function makeNextContinuationData(token) {
+    return {
+        nextContinuationData: {
+            continuation: token,
+            clickTrackingParams: CLICK_TRACKING
+        }
+    };
+}
+
+function makeReloadContinuationData(token) {
+    return {
+        reloadContinuationData: {
+            continuation: token,
+            clickTrackingParams: CLICK_TRACKING
+        }
+    };
+}
+
+function makeTabContinuation(browseId) {
+    return makeContinuation({
+        kind: "tab",
+        browseId: normalizeBrowseId(browseId)
+    });
+}
+
+function makeShelvesContinuation(browseId, shelfIndex) {
+    return makeContinuation({
+        kind: "shelves",
+        browseId: normalizeBrowseId(browseId),
+        shelfIndex
+    });
+}
+
+function makeChannelContinuation(channelId, page) {
+    return makeContinuation({
+        kind: "channelVideos",
+        channelId,
+        page
+    });
+}
+
+function makeVideosContinuation(browseId, shelfIndex, page) {
+    return makeContinuation({
+        kind: "videos",
+        browseId: normalizeBrowseId(browseId),
+        shelfIndex,
+        page
+    });
+}
+
+
+// --------------------------------------------------
+// INVIDIOUS REQUESTS
+// --------------------------------------------------
+
+function getAuthHeaders(authHeader) {
+    if (!authHeader) {
+        return {};
+    }
+
+    if (typeof authHeader === "string") {
+        return {
+            Authorization: authHeader
+        };
+    }
+
+    if (
+        typeof authHeader === "object" &&
+        !Array.isArray(authHeader)
+    ) {
+        return authHeader;
+    }
+
+    return {};
+}
+
+async function fetchVideos(endpoint, params = {}, authHeader = null) {
+    try {
+        const { data } = await axios.get(
+            `${baseURL}${endpoint}`,
+            {
+                params,
+                headers: getAuthHeaders(authHeader),
+                timeout: 20000
+            }
+        );
+
+        console.log(
+            "[Invidious]",
+            endpoint,
+            params,
+            "->",
+            Array.isArray(data)
+                ? `${data.length} results`
+                : typeof data
+        );
+
+        if (!Array.isArray(data)) {
+            return [];
+        }
+
+        return data.filter(
+            video => video && video.videoId
+        );
+
+    } catch (error) {
+        console.error(
+            "[Invidious] Request failed:",
+            endpoint,
+            error.response?.status || "",
+            error.message
+        );
+
+        return [];
+    }
+}
+
+async function fetchChannelInfo(channelId, authHeader = null) {
+    try {
+        const { data } = await axios.get(
+            `${baseURL}/channels/${encodeURIComponent(channelId)}`,
+            {
+                headers: getAuthHeaders(authHeader),
+                timeout: 20000
+            }
+        );
+
+        console.log("[Invidious] Channel info:", channelId);
+
+        return data;
+    } catch (error) {
+        console.error(
+            "[Invidious] Channel info failed:",
+            channelId,
+            error.response?.status || "",
+            error.message
+        );
+
+        return null;
+    }
+}
+
+async function fetchChannelVideos(
+    channelId,
+    page = 1,
+    authHeader = null
+) {
+    try {
+        const { data } = await axios.get(
+            `${baseURL}/channels/${encodeURIComponent(channelId)}/videos`,
+            {
+                params: { page },
+                headers: getAuthHeaders(authHeader),
+                timeout: 20000
+            }
+        );
+
+        const videos = data.videos;
+        console.log(videos)
+
+        console.log("[Invidious] Channel videos:", {
+            channelId,
+            page,
+            count: videos.length
+        });
+
+        return videos.filter(video => video && video.videoId);
+    } catch (error) {
+        console.error(
+            "[Invidious] Channel videos failed:",
+            channelId,
+            error.response?.status || "",
+            error.message
+        );
+
+        return [];
+    }
+}
+
+
+// --------------------------------------------------
+// VIDEO CONVERTER
+// --------------------------------------------------
+
+
+function convertInvVidStructToV10(video) {
+    const videoId = String(video.videoId || '');
+    const title = String(video.title || 'Untitled video');
+    const author = String(video.author || 'Unknown channel');
+    const authorId = String(video.authorId || '');
+
+    const publishedText = String(video.publishedText || '');
+
+    const viewCount = Number(video.viewCount || 0);
+    const viewCountText = video.viewCountText ||
+        `${new Intl.NumberFormat('en-US').format(viewCount)} views`;
+
+    const isLive = video.liveNow === true;
+    const isUpcoming = video.isUpcoming === true;
+    const is4k = video.is4k === true;
+    const is8k = video.is8k === true;
+
+    const durationSeconds = Number(video.lengthSeconds || 0);
+
+    const duration = isLive
+        ? 'LIVE'
+        : formatDuration(durationSeconds);
+
+    const durationLabel = isLive
+        ? 'Live stream'
+        : `${durationSeconds} seconds`;
+
+    const thumbnails = Array.isArray(video.videoThumbnails)
+        ? video.videoThumbnails
+            .filter(item =>
+                item &&
+                !['start', 'middle', 'end'].includes(item.quality)
+            )
+            .map(({ quality, ...thumbnail }) => thumbnail)
+            .sort((a, b) =>
+                Number(a.width || 0) - Number(b.width || 0)
+            )
+        : [];
+
+    const thumbnailOverlays = [];
+
+    // LIVE badge
+    if (isLive) {
+        thumbnailOverlays.push({
+            thumbnailOverlayTimeStatusRenderer: {
+                text: {
+                    runs: [{ text: 'LIVE' }]
+                },
+                style: 'LIVE'
             }
         });
     } else {
-        console.warn('sectionListRenderer.contents is missing or not an array');
-    }
-
-    return data; 
-}
-
-async function convertSubscriptionsToV5(data, authHeader) {
-    console.log('Received Subscription Data:', data, authHeader);
-
-    const tabs = data?.contents?.tvBrowseRenderer?.content?.tvSecondaryNavRenderer?.sections?.[0]?.tvSecondaryNavSectionRenderer?.tabs;
-
-    if (!Array.isArray(tabs) || tabs.length === 0) {
-        console.warn('No subscription tabs found.');
-        return data;
-    }
-
-    const subscriptionTab = tabs.find(tab => tab.tabRenderer?.selected);
-
-    if (!subscriptionTab) {
-        console.warn('No selected subscription tab found.');
-        return data;
-    }
-
-    console.log('Processing Subscription Tab:', subscriptionTab);
-
-    const gridItems = subscriptionTab.tabRenderer?.content?.tvSurfaceContentRenderer?.content?.gridRenderer?.items;
-
-    if (!Array.isArray(gridItems)) {
-        console.warn('No grid items found in subscription tab.');
-        return data;
-    }
-
-    let transformedItems = [];
-
-    gridItems.forEach((videoItem, index) => {
-        if (videoItem.tileRenderer) {
-            try {
-                const videoId = videoItem.tileRenderer.onSelectCommand?.watchEndpoint?.videoId || "";
-
-                const thumbnail = {
-                    thumbnails: [
-                        { url: `https://i.ytimg.com/vi/${videoId}/default.jpg`, width: 120, height: 90 },
-                        { url: `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`, width: 320, height: 180 },
-                        { url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`, width: 480, height: 360 },
-                        { url: `https://i.ytimg.com/vi/${videoId}/sddefault.jpg`, width: 640, height: 480 },
-                        { url: `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`, width: 1920, height: 1080 }
-                    ]
-                };
-
-                const metadata = videoItem.tileRenderer.metadata?.tileMetadataRenderer || {};
-                const titleText = metadata.title?.simpleText || "Untitled Video";
-                const viewCountText = metadata.lines?.[1]?.lineRenderer?.items?.find(item => item.lineItemRenderer?.text?.simpleText?.includes('views'))?.lineItemRenderer?.text?.simpleText || "0 views";
-                const publishedTimeText = metadata.lines?.[1]?.lineRenderer?.items?.find(item => item.lineItemRenderer?.text?.simpleText?.includes('ago'))?.lineItemRenderer?.text?.simpleText || "Unknown";
-
-                const lengthText = (
-                    videoItem.tileRenderer.header?.tileHeaderRenderer?.thumbnailOverlays?.[0]?.thumbnailOverlayTimeStatusRenderer?.text?.simpleText ||
-                    metadata.lines?.[1]?.lineRenderer?.items?.find(item => item.lineItemRenderer?.text?.simpleText?.includes('min'))?.lineItemRenderer?.text?.simpleText ||
-                    "0:00"
-                );
-
-                let channelName = "Unknown Channel";
-                if (metadata.lines?.[0]?.lineRenderer?.items) {
-                    const channelInfo = metadata.lines[0].lineRenderer.items.find(item => item.lineItemRenderer?.text?.runs);
-                    if (channelInfo) {
-                        channelName = channelInfo.lineItemRenderer.text.runs[0]?.text || channelName;
-                    }
-                }
-
-                let newVideoItem = {
-                    gridVideoRenderer: {
-                        videoId: videoId,
-                        thumbnail: thumbnail,
-                        title: { runs: [{ text: titleText }] },
-                        viewCountText: { runs: [{ text: viewCountText }] },
-                        publishedTimeText: { runs: [{ text: publishedTimeText }] },
-                        lengthText: {
-                            runs: [{ text: lengthText }],
-                            accessibility: { accessibilityData: { label: lengthText } }
-                        },
-                        shortBylineText: { runs: [{ text: channelName }] }
-                    }
-                };
-
-                transformedItems.push(newVideoItem);
-
-                console.log(`Converted tileRenderer to gridVideoRenderer for Subscription Item ${index}, VideoId: ${videoId}`);
-            } catch (err) {
-                console.error(`Error processing subscription item ${index}:`, err);
-            }
-        }
-    });
-
-    // Extract the first shelf
-    const originalContents = data.contents?.tvBrowseRenderer?.content?.tvSurfaceContentRenderer?.content?.sectionListRenderer?.contents || [];
-    const firstShelf = originalContents.length > 0 ? originalContents[0] : null;
-    const remainingShelves = originalContents.slice(1); // Extract all shelves except the first
-
-    // Create new subscription shelf
-    const subscriptionShelf = {
-        shelfRenderer: {
-            content: {
-                horizontalListRenderer: {
-                    items: transformedItems,
-                    trackingParams: "CFEQxjkiEwjkouGq6cSLAxWKm-QGHXTxMlA=", // Example tracking params
-                    continuations: [
-                        {
-                            nextContinuationData: {
-                                continuation: "4qmFsgLdAxIIRkV0b3BpY3Ma0AM2Z1BZQWtkMk9FSkhUQzFyYldGMmNIaEpjMFJYYlc5TFlVRnZXbVZZVW1aalIwWnVXbFk1ZW1KdFJuZGpNbWgyWkVZNWVWcFhaSEJpTWpWb1lrSkpabGw2WkVOYWFteHlXVEo0TVZwSGRGZFpNSEI0WlZSc1dWcEZhR3RUYldzelZESjBWMDlXVmtOaGVHOXhRVUZDYkdKblFVSldWazFCUVZaV1ZFRkJSVUZTYTFZellVZEdNRmd6VW5aWU0yUm9aRWRPYjBGQlJVSkNkMEZCUVZGQlFVRlJSVUV5Y3paTU5uZDVSRUZSY1VGQlVXOVJRMmR6UzBOalRFZ3ljMWxLUVhkcVIwRm1TUzFCUVc5T2QybzBTME5PVDFWd04zVXpPVnAyU21SQmIwNTNhalJMUTA5RFREQnlOak54T0RaWFFXZHZUM2RxTkV4RFMzSm9jSE5tUWpSa1R6UXdkMFZMUkhOSkxVTjNhblo1VFVoUWF6VTNVVGhsV1VKRFp6TkRVR2R2U1RNMGNtNXFaVzFXT1ZwSlowVm5SVUZIWjFGSlFVSkJRa2RuVVVsQlFrRkRSMmRSU1VGQ1FVUkhaMUZKUVVKQlJVZG5VVWxCUWtGRw==",
-                                clickTrackingParams: "CFIQybcCIhMI5KLhqunEiwMVipvkBh108TJQ"
-                            }
+        // Normal duration badge
+        thumbnailOverlays.push({
+            thumbnailOverlayTimeStatusRenderer: {
+                text: {
+                    runs: [{ text: duration }],
+                    accessibility: {
+                        accessibilityData: {
+                            label: durationLabel
                         }
-                    ],
-                    collapsedItemCount: 3,
-                    visibleItemCount: 3
+                    }
+                },
+                style: 'DEFAULT'
+            }
+        });
+    }
+
+    // Quality badges
+    if (is8k) {
+        thumbnailOverlays.push({
+            thumbnailOverlayBadgeViewModel: {
+                badgeViewModel: {
+                    text: '8K',
+                    badgeStyle: 'BADGE_STYLE_TYPE_SIMPLE'
                 }
-            },
-            title: {
-                runs: [{ text: "All" }]
-            },
+            }
+        });
+    } else if (is4k) {
+        thumbnailOverlays.push({
+            thumbnailOverlayBadgeViewModel: {
+                badgeViewModel: {
+                    text: '4K',
+                    badgeStyle: 'BADGE_STYLE_TYPE_SIMPLE'
+                }
+            }
+        });
+    }
+
+    const authorRun = {
+        text: author
+    };
+
+    if (authorId) {
+        authorRun.navigationEndpoint = {
+            clickTrackingParams: '',
+            browseEndpoint: {
+                browseId: authorId
+            }
+        };
+    }
+
+    const byline = {
+        runs: [authorRun]
+    };
+
+    const navigationEndpoint = {
+        clickTrackingParams: '',
+        watchEndpoint: {
+            videoId
         }
     };
 
-    // Create additional shelves for the next 5 tabs (excluding the first tab)
-    const additionalShelves = await Promise.all(
-        tabs.slice(1, 6).map(async (tab, index) => {
-            const tabTitle = tab.tabRenderer?.title || `Tab ${index + 1}`;
-            const continuation = tab.tabRenderer?.content?.tvSurfaceContentRenderer?.continuation?.reloadContinuationData?.continuation || "";
-            let newItems = [];
+    return {
+        gridVideoRenderer: {
+            videoId,
 
-            if (continuation) {
-                // Fetch continuation data
-                const continuationData = await fetchBrowseContinuationsForSubs(continuation, authHeader);
-                // Extract the grid items from continuation data
-                const gridItems = continuationData?.continuationContents?.tvSurfaceContentContinuation?.content?.gridRenderer?.items || [];
-                
-                console.log(gridItems)
+            thumbnail: {
+                thumbnails
+            },
 
-                newItems = gridItems.map((videoItem, videoIndex) => {
-                    if (videoItem.tileRenderer) {
-                        try {
-                            const videoId = videoItem.tileRenderer.onSelectCommand?.watchEndpoint?.videoId || "";
-    
-                            const thumbnail = {
-                                thumbnails: [
-                                    { url: `https://i.ytimg.com/vi/${videoId}/default.jpg`, width: 120, height: 90 },
-                                    { url: `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`, width: 320, height: 180 },
-                                    { url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`, width: 480, height: 360 },
-                                    { url: `https://i.ytimg.com/vi/${videoId}/sddefault.jpg`, width: 640, height: 480 },
-                                    { url: `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`, width: 1920, height: 1080 }
-                                ]
-                            };
-    
-                            const metadata = videoItem.tileRenderer.metadata?.tileMetadataRenderer || {};
-                            const titleText = metadata.title?.simpleText || "Untitled Video";
+            thumbnailOverlays,
 
-                            const viewCountText = metadata.lines[0].lineRenderer.items[0].lineItemRenderer.text.simpleText;
-                           
-                            console.log("subs views " + viewCountText)
+            title: {
+                runs: [{ text: title }]
+            },
 
-                            const publishedTimeText = metadata.lines[0].lineRenderer.items[2].lineItemRenderer.text.simpleText;
+            longBylineText: {
+                runs: [{ ...authorRun }]
+            },
 
-                            console.log("publishedTimeText for subs " + publishedTimeText)
+            shortBylineText: byline,
 
-                            const lengthText = (
-                                videoItem.tileRenderer.header?.tileHeaderRenderer?.thumbnailOverlays?.[0]?.thumbnailOverlayTimeStatusRenderer?.text?.simpleText ||
-                                metadata.lines?.[1]?.lineRenderer?.items?.find(item => item.lineItemRenderer?.text?.simpleText?.includes('min'))?.lineItemRenderer?.text?.simpleText ||
-                                "0:00"
-                            );
+            publishedTimeText: {
+                runs: [{ text: publishedText }]
+            },
 
+            viewCountText: {
+                runs: [{ text: viewCountText }]
+            },
 
-                            let channelName = "Unknown Channel";
-                            if (videoItem.tileRenderer?.onLongPressCommand?.showMenuCommand?.subtitle?.simpleText) {
-                                channelName = videoItem.tileRenderer.onLongPressCommand.showMenuCommand.subtitle.simpleText.split('•')[0].trim() || channelName;
-                            }
-                
-    
-                            // Return transformed video item
-                            return {
-                                gridVideoRenderer: {
-                                    videoId: videoId,
-                                    thumbnail: thumbnail,
-                                    title: { runs: [{ text: titleText }] },
-                                    viewCountText: { runs: [{ text: viewCountText }] },
-                                    publishedTimeText: { runs: [{ text: publishedTimeText }] },
-                                    lengthText: {
-                                        runs: [{ text: lengthText }],
-                                        accessibility: { accessibilityData: { label: lengthText } }
-                                    },
-                                    shortBylineText: { runs: [{ text: channelName }] }
-                                }
-                            };
-    
-                        } catch (err) {
-                            console.error(`Error processing continuation item ${videoIndex}:`, err);
-                            return null;  // return null in case of error, we will filter it out later
-                        }
+            shortViewCountText: {
+                runs: [{ text: viewCountText }]
+            },
+
+            lengthText: {
+                runs: [{ text: duration }],
+                accessibility: {
+                    accessibilityData: {
+                        label: durationLabel
                     }
-                    return null;
-                }).filter(item => item !== null); // Filter out any null values
-    
+                }
+            },
+
+            navigationEndpoint,
+
+            channelThumbnail: {
+                thumbnails: Array.isArray(video.authorThumbnails)
+                    ? video.authorThumbnails
+                    : []
+            },
+
+            trackingParams: ''
+        }
+    };
+}
+
+function formatDuration(value) {
+    const total = Math.max(0, Math.floor(Number(value) || 0));
+
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const seconds = total % 60;
+
+    if (hours > 0) {
+        return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+
+
+// --------------------------------------------------
+// PAGINATION SETTINGS
+// --------------------------------------------------
+
+function getPageSize(shelf) {
+    const configured = Number(shelf.pageSize);
+
+    if (
+        Number.isInteger(configured) &&
+        configured > 0
+    ) {
+        return Math.min(configured, 50);
+    }
+
+    return DEFAULT_PAGE_SIZE;
+}
+
+function getShelfLimit(shelf) {
+    const configured = Number(shelf.limit);
+
+    return (
+        Number.isInteger(configured) &&
+        configured > 0
+    )
+        ? configured
+        : Infinity;
+}
+
+
+// --------------------------------------------------
+// FETCH A SINGLE SHELF PAGE
+// --------------------------------------------------
+
+async function fetchShelfPage(
+    browseId,
+    shelfIndex,
+    page,
+    authHeader = null
+) {
+    browseId = normalizeBrowseId(browseId);
+
+    const config = getBrowseConfig(browseId);
+
+    if (!config) {
+        throw new Error(`Unknown browseId: ${browseId}`);
+    }
+
+    const shelf = config.shelves[shelfIndex];
+
+    if (!shelf) {
+        throw new Error(
+            `Unknown shelf ${shelfIndex} in ${browseId}`
+        );
+    }
+
+    const pageSize = getPageSize(shelf);
+    const limit = getShelfLimit(shelf);
+
+    const alreadyReturned = (page - 1) * pageSize;
+    const remaining = limit - alreadyReturned;
+
+    if (remaining <= 0) {
+        return {
+            shelf,
+            videos: [],
+            nextToken: null,
+            pageSize
+        };
+    }
+
+    const rawVideos = await fetchVideos(
+        "/search",
+        {
+            q: shelf.search,
+            type: "video",
+            page,
+            region
+        },
+        authHeader
+    );
+
+    const selectedRawVideos = rawVideos.slice(
+        0,
+        Math.min(pageSize, remaining)
+    );
+
+    const videos = selectedRawVideos.map(
+        convertInvVidStructToV10
+    );
+
+    const reachedLimit =
+        alreadyReturned + selectedRawVideos.length >= limit;
+
+    const hasMore =
+        !reachedLimit &&
+        rawVideos.length >= pageSize;
+
+    return {
+        shelf,
+        videos,
+
+        nextToken: hasMore
+            ? makeVideosContinuation(
+                browseId,
+                shelfIndex,
+                page + 1
+            )
+            : null,
+
+        pageSize
+    };
+}
+
+
+// --------------------------------------------------
+// BUILD SHELF RENDERER
+// --------------------------------------------------
+
+async function buildShelfRenderer(
+    browseId,
+    shelfIndex,
+    authHeader = null
+) {
+    const result = await fetchShelfPage(
+        browseId,
+        shelfIndex,
+        1,
+        authHeader
+    );
+
+    const shelf = result.shelf;
+
+    const horizontalListRenderer = {
+        items: result.videos,
+        trackingParams: SHELF_TRACKING,
+        collapsedItemCount: 3,
+        visibleItemCount: 3
+    };
+
+    if (result.nextToken) {
+        horizontalListRenderer.continuations = [
+            makeNextContinuationData(result.nextToken)
+        ];
+    }
+
+    return {
+        shelfRenderer: {
+            title: {
+                runs: [
+                    {
+                        text: shelf.title
+                    }
+                ]
+            },
+
+            endpoint: {
+                clickTrackingParams: CLICK_TRACKING,
+
+                browseEndpoint: {
+                    browseId: normalizeBrowseId(browseId)
+                }
+            },
+
+            content: {
+                horizontalListRenderer
+            },
+
+            trackingParams: CLICK_TRACKING
+        }
+    };
+}
+
+async function buildChannelBrowseData(
+    channelId,
+    authHeader = null,
+    page = 1
+) {
+    const [channel, rawVideos] = await Promise.all([
+        fetchChannelInfo(channelId, authHeader),
+        fetchChannelVideos(channelId, page, authHeader)
+    ]);
+
+    if (!channel && rawVideos.length === 0) {
+        throw new Error(`Could not load channel: ${channelId}`);
+    }
+
+    const videos = rawVideos
+        .slice(0, DEFAULT_PAGE_SIZE)
+        .map(convertInvVidStructToV10);
+
+        console.log(videos)
+
+    const hasMore = rawVideos.length >= DEFAULT_PAGE_SIZE;
+
+    const title = channel?.author || "Channel";
+    const shelfRenderer = {
+        shelfRenderer: {
+            title: {
+                runs: [{ text: "Uploads" }]
+            },
+
+            content: {
+                horizontalListRenderer: {
+                    items: videos,
+                    trackingParams: SHELF_TRACKING,
+                    collapsedItemCount: 3,
+                    visibleItemCount: 3,
+
+                    ...(hasMore && {
+                        continuations: [
+                            makeNextContinuationData(
+                                makeChannelContinuation(
+                                    channelId,
+                                    page + 1
+                                )
+                            )
+                        ]
+                    })
+                }
+            },
+
+            trackingParams: CLICK_TRACKING
+        }
+    };
+
+    const surface = {
+        content: {
+            sectionListRenderer: {
+                contents: [shelfRenderer],
+                trackingParams: SECTION_TRACKING
             }
-    
+        },
+
+        header: {
+            tvSurfaceHeaderRenderer: {
+                subtitle: {
+                    runs: [{ text: title }]
+                }
+            }
+        },
+
+        continuation: makeReloadContinuationData(
+            makeChannelContinuation(channelId, 1)
+        ),
+
+        trackingParams: SURFACE_TRACKING
+    };
+
+    return {
+    responseContext: makeResponseContext(),
+
+    header: {
+        tvChannelHeaderRenderer: {
+            title: channel.author,
+            channelId: channel.authorId,
+
+            avatar: {
+                thumbnails: [...(channel.authorThumbnails || [])].sort(
+                    (a, b) => Number(b.width || 0) - Number(a.width || 0)
+                )
+            },
+
+            desktopBanner: {
+                thumbnails: [...(channel.authorBanners || [])].sort(
+                    (a, b) => Number(a.width || 0) - Number(b.width || 0)
+                )
+            },
+
+            subscribeButton: {
+                subscribeButtonRenderer: {
+                    channelId: channel.authorId,
+                    subscribed: false,
+                    enabled: true,
+                    type: "FREE",
+
+                    subscribedButtonText: {
+                        simpleText: "Subscribed"
+                    },
+
+                    unsubscribedButtonText: {
+                        simpleText: "Subscribe"
+                    },
+
+                    unsubscribeButtonText: {
+                        simpleText: "Unsubscribe"
+                    },
+
+                    trackingParams: ""
+                }
+            }
+        }
+    },
+
+    contents: {
+        sectionListRenderer: {
+            contents: [
+                shelfRenderer
+            ],
+            trackingParams: SECTION_TRACKING
+        }
+    },
+
+    trackingParams: CLICK_TRACKING
+};
+}
+
+async function fetchChannelContinuation(payload, authHeader = null) {
+    const channelId = String(payload.channelId || "");
+    const page = Number(payload.page);
+
+    if (!isChannelId(channelId)) {
+        throw new Error("Invalid channel ID");
+    }
+
+    if (
+        !Number.isInteger(page) ||
+        page < 2 ||
+        page > 1000
+    ) {
+        throw new Error("Invalid channel page");
+    }
+
+    const rawVideos = await fetchChannelVideos(
+        channelId,
+        page,
+        authHeader
+    );
+
+    const videos = rawVideos
+        .slice(0, DEFAULT_PAGE_SIZE)
+        .map(convertInvVidStructToV10);
+
+    const nextToken = rawVideos.length >= DEFAULT_PAGE_SIZE
+        ? makeChannelContinuation(channelId, page + 1)
+        : null;
+
+    return makeHorizontalContinuationResponse(
+        videos,
+        nextToken
+    );
+}
+
+
+// --------------------------------------------------
+// FETCH SHELF BATCH
+// --------------------------------------------------
+
+async function fetchShelfBatch(
+    browseId,
+    startIndex,
+    authHeader = null
+) {
+    browseId = normalizeBrowseId(browseId);
+
+    const config = getBrowseConfig(browseId);
+
+    if (!config) {
+        throw new Error(
+            `No browseConfig found for ${browseId}`
+        );
+    }
+
+    const endIndex = Math.min(
+        startIndex + SHELVES_PER_BATCH,
+        config.shelves.length
+    );
+
+    const indexes = [];
+
+    for (
+        let index = startIndex;
+        index < endIndex;
+        index++
+    ) {
+        indexes.push(index);
+    }
+
+    const shelves = await Promise.all(
+        indexes.map(index =>
+            buildShelfRenderer(
+                browseId,
+                index,
+                authHeader
+            )
+        )
+    );
+
+    return {
+        shelves,
+
+        nextShelfToken:
+            endIndex < config.shelves.length
+                ? makeShelvesContinuation(
+                    browseId,
+                    endIndex
+                )
+                : null,
+
+        endIndex,
+        totalShelves: config.shelves.length
+    };
+}
+
+
+// --------------------------------------------------
+// BUILD TV SURFACE CONTENT
+// --------------------------------------------------
+
+function makeSurfaceContent(
+    browseId,
+    title,
+    batch
+) {
+    const sectionListRenderer = {
+        contents: batch.shelves,
+        trackingParams: SECTION_TRACKING
+    };
+
+    if (batch.nextShelfToken) {
+        sectionListRenderer.continuations = [
+            makeNextContinuationData(
+                batch.nextShelfToken
+            )
+        ];
+    }
+
+    return {
+        content: {
+            sectionListRenderer
+        },
+
+        header: {
+            tvSurfaceHeaderRenderer: {
+                subtitle: {
+                    runs: [
+                        {
+                            text: title || getFeedTitle(browseId)
+                        }
+                    ]
+                }
+            }
+        },
+
+        continuation: makeReloadContinuationData(
+            makeTabContinuation(browseId)
+        ),
+
+        trackingParams: getSurfaceTrackingParams(browseId)
+    };
+}
+
+async function fetchShelvesData(
+    browseId,
+    title,
+    authHeader = null,
+    startIndex = 0
+) {
+    browseId = normalizeBrowseId(browseId);
+
+    const batch = await fetchShelfBatch(
+        browseId,
+        startIndex,
+        authHeader
+    );
+
+    return makeSurfaceContent(
+        browseId,
+        title,
+        batch
+    );
+}
+
+
+// --------------------------------------------------
+// TVHTML5 CONTINUATION RESPONSES
+// --------------------------------------------------
+
+// Horizontal shelf video pagination.
+//
+// The 2018 TV application reads:
+// continuationContents.horizontalListContinuation.items
+//
+// It then appends those items to horizontalListRenderer.items.
+
+function makeHorizontalContinuationResponse(
+    items,
+    nextToken
+) {
+    return {
+        responseContext: makeResponseContext(),
+
+        trackingParams: SHELF_TRACKING,
+
+        continuationContents: {
+            horizontalListContinuation: {
+                items,
+
+                continuations: nextToken
+                    ? [
+                        makeNextContinuationData(nextToken)
+                    ]
+                    : []
+            }
+        }
+    };
+}
+
+
+// More shelves inside a tab.
+//
+// The TV application reads:
+// continuationContents.sectionListContinuation.contents
+//
+// It appends the returned contents to sectionListRenderer.contents.
+
+function makeSectionContinuationResponse(
+    contents,
+    nextToken
+) {
+    return {
+        responseContext: makeResponseContext(),
+
+        trackingParams: SECTION_TRACKING,
+
+        continuationContents: {
+            sectionListContinuation: {
+                contents,
+
+                continuations: nextToken
+                    ? [
+                        makeNextContinuationData(nextToken)
+                    ]
+                    : [],
+
+                trackingParams: SECTION_TRACKING
+            }
+        }
+    };
+}
+
+
+// Reload an entire tab.
+//
+// The TV application reads:
+// continuationContents.tvSurfaceContentContinuation.content
+//
+// This replaces the current surface content rather than appending it.
+
+function makeTVSurfaceContinuationResponse(
+    browseId,
+    title,
+    batch
+) {
+    const surface = makeSurfaceContent(
+        browseId,
+        title,
+        batch
+    );
+
+    return {
+        responseContext: makeResponseContext(),
+
+        trackingParams: surface.trackingParams,
+
+        continuationContents: {
+            tvSurfaceContentContinuation: {
+                content: surface.content,
+                header: surface.header,
+                trackingParams: surface.trackingParams
+            }
+        }
+    };
+}
+
+
+// --------------------------------------------------
+// VIDEO CONTINUATION
+// --------------------------------------------------
+
+async function fetchVideoContinuation(
+    payload,
+    authHeader = null
+) {
+    const browseId = normalizeBrowseId(payload.browseId);
+    const config = getBrowseConfig(browseId);
+
+    if (!config) {
+        throw new Error(`Unknown browseId: ${browseId}`);
+    }
+
+    const shelfIndex = Number(payload.shelfIndex);
+    const page = Number(payload.page);
+
+    if (
+        !Number.isInteger(shelfIndex) ||
+        shelfIndex < 0 ||
+        shelfIndex >= config.shelves.length
+    ) {
+        throw new Error(
+            "Invalid shelf index in video continuation"
+        );
+    }
+
+    if (
+        !Number.isInteger(page) ||
+        page < 2 ||
+        page > 1000
+    ) {
+        throw new Error(
+            "Invalid page in video continuation"
+        );
+    }
+
+    const result = await fetchShelfPage(
+        browseId,
+        shelfIndex,
+        page,
+        authHeader
+    );
+
+    console.log("[TV continuation] horizontal videos", {
+        browseId,
+        shelfIndex,
+        page,
+        returned: result.videos.length,
+        hasNext: !!result.nextToken
+    });
+
+    return makeHorizontalContinuationResponse(
+        result.videos,
+        result.nextToken
+    );
+}
+
+
+// --------------------------------------------------
+// SHELF CONTINUATION
+// --------------------------------------------------
+
+async function fetchShelfContinuation(
+    payload,
+    authHeader = null
+) {
+    const browseId = normalizeBrowseId(payload.browseId);
+    const config = getBrowseConfig(browseId);
+
+    if (!config) {
+        throw new Error(`Unknown browseId: ${browseId}`);
+    }
+
+    const startIndex = Number(payload.shelfIndex);
+
+    if (
+        !Number.isInteger(startIndex) ||
+        startIndex < 0
+    ) {
+        throw new Error(
+            "Invalid shelf index in section continuation"
+        );
+    }
+
+    const batch = await fetchShelfBatch(
+        browseId,
+        startIndex,
+        authHeader
+    );
+
+    console.log("[TV continuation] more shelves", {
+        browseId,
+        startIndex,
+        returned: batch.shelves.length,
+        hasNext: !!batch.nextShelfToken
+    });
+
+    return makeSectionContinuationResponse(
+        batch.shelves,
+        batch.nextShelfToken
+    );
+}
+
+
+// --------------------------------------------------
+// TAB RELOAD CONTINUATION
+// --------------------------------------------------
+
+async function fetchTabContinuation(
+    payload,
+    authHeader = null
+) {
+    const browseId = normalizeBrowseId(payload.browseId);
+
+    if (!getBrowseConfig(browseId)) {
+        throw new Error(`Unknown tab: ${browseId}`);
+    }
+
+    const title = getFeedTitle(browseId);
+
+    const batch = await fetchShelfBatch(
+        browseId,
+        0,
+        authHeader
+    );
+
+    console.log("[TV continuation] tab reload", {
+        browseId,
+        returned: batch.shelves.length,
+        hasNext: !!batch.nextShelfToken
+    });
+
+    return makeTVSurfaceContinuationResponse(
+        browseId,
+        title,
+        batch
+    );
+}
+
+
+// --------------------------------------------------
+// CONTINUATION DISPATCHER
+// --------------------------------------------------
+
+async function fetchBrowseContinuation(
+    token,
+    authHeader = null
+) {
+    const payload = parseContinuation(token);
+
+    if (!payload) {
+        throw new Error(
+            "Invalid or unsupported continuation token"
+        );
+    }
+
+    switch (payload.kind) {
+        case "tab":
+            return fetchTabContinuation(
+                payload,
+                authHeader
+            );
+
+        case "shelves":
+            return fetchShelfContinuation(
+                payload,
+                authHeader
+            );
+
+        case "channelVideos":
+            return fetchChannelContinuation(
+                payload,
+                authHeader
+            );
+
+        case "videos":
+            return fetchVideoContinuation(
+                payload,
+                authHeader
+            );
+
+        default:
+            throw new Error(
+                `Unsupported continuation kind: ${payload.kind}`
+            );
+    }
+}
+
+
+// --------------------------------------------------
+// INITIAL BROWSE REQUEST
+// --------------------------------------------------
+
+async function fetchBrowseData(
+    browseId = null,
+    authHeader = null
+) {
+    // Accept a complete InnerTube request body.
+
+    if (
+        browseId &&
+        typeof browseId === "object"
+    ) {
+        const requestBody = browseId;
+
+        if (requestBody.continuation) {
+            return fetchBrowseContinuation(
+                requestBody.continuation,
+                authHeader
+            );
+        }
+
+        browseId = requestBody.browseId;
+    }
+
+    // Accept our custom continuation token directly.
+
+    if (
+        typeof browseId === "string" &&
+        parseContinuation(browseId)
+    ) {
+        return fetchBrowseContinuation(
+            browseId,
+            authHeader
+        );
+    }
+
+    const selectedBrowseId = normalizeBrowseId(browseId);
+
+// Channel browsing
+if (isChannelId(selectedBrowseId)) {
+    return buildChannelBrowseData(
+        selectedBrowseId,
+        authHeader,
+        1
+    );
+}
+
+const selectedConfig = getBrowseConfig(
+    selectedBrowseId
+);
+
+    if (!selectedConfig) {
+        throw new Error(
+            `Unknown browseId: ${selectedBrowseId}`
+        );
+    }
+
+    const navItems = await Promise.all(
+        feedConfig.map(async navitem => {
+            const navBrowseId = normalizeBrowseId(
+                navitem.type
+            );
+
+            const selected =
+                navBrowseId === selectedBrowseId;
+
+            const tvSurfaceContentRenderer = selected
+                ? await fetchShelvesData(
+                    navBrowseId,
+                    navitem.title,
+                    authHeader,
+                    0
+                )
+                : {
+                    continuation: makeReloadContinuationData(
+                        makeTabContinuation(navBrowseId)
+                    ),
+
+                    trackingParams: getSurfaceTrackingParams(
+                        navBrowseId
+                    )
+                };
 
             return {
-                shelfRenderer: {
-                    content: {
-                        horizontalListRenderer: {
-                            items: newItems,
-                            trackingParams: "CFEQxjkiEwjkouGq6cSLAxWKm-QGHXTxMlA=", // Example tracking params
-                            continuations: continuation ? [
-                                {
-                                    nextContinuationData: {
-                                        continuation: continuation,
-                                        clickTrackingParams: "CFIQybcCIhMI5KLhqunEiwMVipvkBh108TJQ"
-                                    }
-                                }
-                            ] : [],
-                            collapsedItemCount: 3,
-                            visibleItemCount: 3
+                tabRenderer: {
+                    endpoint: {
+                        clickTrackingParams: CLICK_TRACKING,
+
+                        browseEndpoint: {
+                            browseId: navBrowseId,
+                            params: "-gINaGFwcGVuaW5nX25vdw%3D%3D"
                         }
                     },
-                    title: {
-                        runs: [{ text: tabTitle }]
+
+                    title: navitem.title,
+                    selected,
+
+                    content: {
+                        tvSurfaceContentRenderer
                     },
+
+                    tabIdentifier: navBrowseId,
+                    trackingParams: CLICK_TRACKING
                 }
             };
         })
     );
 
-    // Construct the final transformed data structure
-    const transformedData = {
+    return {
+        responseContext: makeResponseContext(),
+
         contents: {
             tvBrowseRenderer: {
                 content: {
-                    tvSurfaceContentRenderer: {
-                        content: {
-                            sectionListRenderer: {
-                                contents: [
-                                    firstShelf, // Keep the first shelf unchanged
-                                    subscriptionShelf, // Add the transformed subscription shelf
-                                    ...remainingShelves, // Append the rest of the shelves
-                                    ...additionalShelves // Add the additional shelves
-                                ].filter(Boolean) // Remove any null values
+                    tvSecondaryNavRenderer: {
+                        sections: [
+                            {
+                                tvSecondaryNavSectionRenderer: {
+                                    tabs: navItems,
+                                    trackingParams: CLICK_TRACKING
+                                }
                             }
+                        ],
+
+                        trackingParams: CLICK_TRACKING,
+
+                        title: {
+                            runs: [
+                                {
+                                    text: "Home"
+                                }
+                            ]
                         }
                     }
                 }
             }
-        }
-    };
+        },
 
-    return transformedData;
+        trackingParams: CLICK_TRACKING
+    };
 }
 
 
-module.exports = { fetchBrowseData };
+// --------------------------------------------------
+// EXPORTS
+// --------------------------------------------------
+
+module.exports = {
+    fetchBrowseData,
+    fetchBrowseContinuation,
+    fetchShelvesData,
+    fetchShelfPage,
+    convertInvVidStructToV10,
+    parseContinuation,
+    browseConfig,
+    feedConfig
+};

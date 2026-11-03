@@ -1,8 +1,8 @@
 
 # 2016YouTubeTV
 
-A project to revive the old 2015-2016 YouTubeTV HTML5 Web App.
-
+A project to revive the old 2018 YouTubeTV HTML5 Web App.
+MODIFIED 2016YoutubeTV by OYTLover
 
 ## Screenshots
 

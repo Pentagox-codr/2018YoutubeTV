@@ -38,7 +38,7 @@ if (!fs.existsSync(settingsPath)) {
     console.log(`Current settings in settings.json: ${JSON.stringify(settings, null, 4)}`);
 }
 
-const { fetchBrowseData } = settings.expBrowse
+const { fetchBrowseData, fetchBrowseContinuation } = settings.expBrowse
     ? require('./exp_browse_api')  
     : require('./browse_api');    
 
@@ -47,7 +47,7 @@ const serverIp = settings.serverIp || "localhost";
 console.log("Loaded Server IP:", serverIp);
 
 const app = express();
-const port = 8090;
+const port = 5000;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -87,8 +87,8 @@ const server = corsAnywhere.createServer({
 });
 
 
-server.listen(8070, serverIp, () => {
-    console.log('CORS Anywhere proxy running on http://' + serverIp + ':8070');
+server.listen(5100, serverIp, () => {
+    console.log('CORS Anywhere proxy running on http://' + serverIp + ':5100');
 });
 
 
@@ -113,6 +113,11 @@ app.use('/logs', express.static(path.join(__dirname, '../logs')));
 app.get('/', (req, res) => {
     console.log('Received request for the root endpoint');
     res.sendFile(path.join(__dirname, '../index.html'));
+});
+
+app.get('/2018', (req, res) => {
+    console.log('Received request for the root endpoint (2018)');
+    res.sendFile(path.join(__dirname, '../2018.html'));
 });
 
 oauthRouter(app);
@@ -147,7 +152,7 @@ app.get('/web/*', (req, res) => {
     return res.redirect(`/assets/${fileName}`);
 });
 
-app.get('/assets/:folder/*', (req, res) => {
+/*app.get('/assets/:folder/*', (req, res) => {
     const folder = req.params.folder;
     const requestedPath = req.params[0];
 
@@ -157,7 +162,7 @@ app.get('/assets/:folder/*', (req, res) => {
     console.log(`Redirecting from /assets/${folder}/${requestedPath} to ${redirectUrl}`);
 
     res.redirect(redirectUrl);
-});
+});*/
 
 app.get('/assets/:filename', (req, res) => {
     const filename = req.params.filename;
@@ -270,22 +275,34 @@ app.get('/api/chart', async (req, res) => {
     }
 });
 
-app.get('/api/browse', async (req, res) => {
-    const { browseId } = req.query;
-
-    if (!browseId) {
-        return res.status(400).json({
-            error: 'Missing browseId parameter in the request.'
-        });
-    }
-
+app.post("/youtubei/v1/browse", async (req, res) => {
     try {
-        const browseData = await fetchBrowseData(browseId);
-        res.json(browseData);
-    } catch (error) {
-        console.error('Error:', error.message);
+        const body = req.body;
+
+        let result;
+
+        if (body.continuation) {
+            result = await fetchBrowseContinuation(
+                body.continuation,
+                req.headers.authorization || null
+            );
+        } else if (body.browseId) {
+            result = await fetchBrowseData(
+                body.browseId,
+                req.headers.authorization || null
+            );
+        } else {
+            return res.status(400).json({
+                error: "Missing browseId or continuation parameter."
+            });
+        }
+
+        res.json(result);
+    } catch (err) {
+        console.error("[TV BROWSE]", err);
+
         res.status(500).json({
-            error: error.message
+            error: err.message
         });
     }
 });
@@ -466,27 +483,34 @@ app.all('/api/lounge/bc/bind', async (req, res) => {
 
 
 
-app.post('/api/browse', async (req, res) => {
-    const { browseId } = req.body;
-
-    const authHeader = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
-
-    console.log('Authorization Header:', authHeader);
-
-    if (!browseId) {
-        return res.status(400).json({
-            error: 'Missing browseId parameter in the request body.'
-        });
-    }
-
+app.post("/api/browse", async (req, res) => {
     try {
-        const browseData = await fetchBrowseData(browseId, authHeader);
+        const body = req.body;
 
-        res.json(browseData);
-    } catch (error) {
-        console.error('Error:', error.message);
+        let result;
+
+        if (body.continuation) {
+            result = await fetchBrowseContinuation(
+                body.continuation,
+                req.headers.authorization || null
+            );
+        } else if (body.browseId) {
+            result = await fetchBrowseData(
+                body.browseId,
+                req.headers.authorization || null
+            );
+        } else {
+            return res.status(400).json({
+                error: "Missing browseId or continuation parameter."
+            });
+        }
+
+        res.json(result);
+    } catch (err) {
+        console.error("[TV BROWSE]", err);
+
         res.status(500).json({
-            error: error.message
+            error: err.message
         });
     }
 });

@@ -1,0 +1,91 @@
+{
+    "responseContext": {
+        "serviceTrackingParams": [
+            {
+                "service": "CSI",
+                "params": [
+                    {
+                        "key": "c",
+                        "value": "WEB"
+                    },
+                    {
+                        "key": "cver",
+                        "value": "2.20261030.02.00"
+                    },
+                    {
+                        "key": "yt_li",
+                        "value": "1"
+                    },
+                    {
+                        "key": "GetShortsWebTopLevelComments_rid",
+                        "value": "0x0768b19d4da62e23"
+                    }
+                ]
+            },
+            {
+                "service": "GFEEDBACK",
+                "params": [
+                    {
+                        "key": "logged_in",
+                        "value": "1"
+                    }
+                ]
+            },
+            {
+                "service": "GUIDED_HELP",
+                "params": [
+                    {
+                        "key": "logged_in",
+                        "value": "1"
+                    }
+                ]
+            },
+            {
+                "service": "ECATCHER",
+                "params": [
+                    {
+                        "key": "client.version",
+                        "value": "2.20261030"
+                    },
+                    {
+                        "key": "client.name",
+                        "value": "WEB"
+                    }
+                ]
+            }
+        ],
+        "maxAgeSeconds": 300,
+        "mainAppWebResponseContext": {
+            "datasyncId": "114123175477755314734||",
+            "loggedOut": false,
+            "trackingParam": "kxCfmPxhoPoRjkfuPuHX_YUIIApm3zcRQiNfwSk_wHHrETDasoWtE6-lg9GNMLX28R9Mwr76Ahd2oRudkCEHLqGiARRoj6tCn3eoU-VR3w0uI-wRgLuswpIBwOcCEg9TDwslLKPQ-hS"
+        },
+        "responseId": "IhMIiYLK_OHqlwMV2V6dCR3znTDY",
+        "webResponseContextExtensionData": {
+            "webResponseContextPreloadData": {
+                "preloadMessageNames": [
+                    "commentThreadRenderer",
+                    "commentViewModel",
+                    "continuationItemRenderer",
+                    "avatarViewModel",
+                    "commentReplyDialogRenderer",
+                    "buttonRenderer",
+                    "emojiPickerRenderer",
+                    "menuRenderer",
+                    "menuServiceItemRenderer"
+                ]
+            },
+            "hasDecorated": true
+        }
+    },
+    "trackingParams": "CAAQhGciEwiJgsr84eqXAxXZXp0JHfOdMNiCARoIABCEZyITCLODn-Dg6pcDFUXLcwEdrK8C5coBBDgvUNY=",
+    "onResponseReceivedEndpoints": [
+        {
+            "clickTrackingParams": "CAAQhGciEwiJgsr84eqXAxXZXp0JHfOdMNjKAQQ4L1DW",
+            "appendContinuationItemsAction": {
+                "continuationItems": [],
+                "targetId": "unknown"
+            }
+        }
+    ]
+}

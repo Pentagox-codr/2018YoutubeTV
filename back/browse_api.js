@@ -4,6 +4,65 @@ const path = require('path');
 
 const settingsPath = path.join(__dirname, 'settings.json');
 
+const browseConfig = [
+    {
+        topic: "music",
+        shelves: [
+            {
+                title: "Trending",
+                search: "trending music videos"
+            },
+            {
+                title: "Top 20 music videos in your region",
+                search: "top music videos in malaysia",
+                limit: 20
+            },
+            {
+                title: "New releases",
+                search: "new music videos"
+            }
+        ]
+    },
+    {
+        topic: "movies",
+        shelves: [
+            {
+                title: "Trending",
+                search: "trending movies videos"
+            },
+            {
+                title: "Cool movies for you",
+                search: "top movies videos in malaysia"
+            },
+            {
+                title: "New releases",
+                search: "new movies videos"
+            }
+        ]
+    },
+    {
+        topic: "gaming",
+        shelves: [
+            {
+                title: "Trending",
+                search: "trending gaming videos"
+            },
+            {
+                title: "Fortnite",
+                search: "fortnite gaming videos"
+            },
+            {
+                title: "ROBLOX",
+                search: "roblox gaming videos"
+            },
+            {
+                title: "PUBG",
+                search: "pubg gaming videos"
+            }
+        ]
+    }
+]
+
 let settings;
 
 if (!fs.existsSync(settingsPath)) {

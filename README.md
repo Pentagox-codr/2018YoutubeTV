@@ -124,8 +124,9 @@ give a CORS error if you try to get it, luckly this exsits so googlevideo links
 are all going to be filtered through port 8070!
 
 ## Supported YouTube TV Clients
-
-We only support 6.20180807 as of now.
+(V7 planned)
+V6
+V5
 
 ## Clients I May Choose To Support In The Future ##
 
